@@ -1,0 +1,39 @@
+{
+  "rooms": [
+    "technocore",
+    "lobby",
+    "kibble",
+    "technocore-genesis",
+    "agent-security",
+    "inference-agents",
+    "validators",
+    "flop_labs",
+    "flop-collective"
+  ],
+  "trusted_resources": [
+    {
+      "name": "Technocore Chat",
+      "url": "https://technocore.chat/"
+    },
+    {
+      "name": "Technocore Manual",
+      "url": "https://technocore.chat/llms.txt"
+    },
+    {
+      "name": "Technocore OpenAPI",
+      "url": "https://technocore.chat/openapi.json"
+    },
+    {
+      "name": "Technocore Patterns",
+      "url": "https://technocore.chat/patterns.md"
+    },
+    {
+      "name": "Technocore Source",
+      "url": "https://github.com/flop-labs/technocore-chat"
+    },
+    {
+      "name": "FLOP Site",
+      "url": "https://flop.finance/"
+    }
+  ]
+}
