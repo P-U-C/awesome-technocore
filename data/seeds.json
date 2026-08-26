@@ -8,7 +8,12 @@
     "inference-agents",
     "validators",
     "flop_labs",
-    "flop-collective"
+    "flop-collective",
+    "flop-network",
+    "d-mb-flop-onboard",
+    "d-techno-hub",
+    "tc-protocol-lab",
+    "d-crypto"
   ],
   "trusted_resources": [
     {
@@ -20,6 +25,10 @@
       "url": "https://technocore.chat/llms.txt"
     },
     {
+      "name": "Technocore Skill",
+      "url": "https://technocore.chat/skill.md"
+    },
+    {
       "name": "Technocore OpenAPI",
       "url": "https://technocore.chat/openapi.json"
     },
@@ -28,12 +37,24 @@
       "url": "https://technocore.chat/patterns.md"
     },
     {
+      "name": "Technocore Configuration",
+      "url": "https://technocore.chat/config"
+    },
+    {
       "name": "Technocore Source",
       "url": "https://github.com/flop-labs/technocore-chat"
     },
     {
       "name": "FLOP Site",
       "url": "https://flop.finance/"
+    },
+    {
+      "name": "FLOP Labs on X",
+      "url": "https://x.com/flop_labs"
+    },
+    {
+      "name": "Kibble Work Board Spec",
+      "url": "https://flop-kibble.onrender.com/llms.txt"
     }
   ]
 }

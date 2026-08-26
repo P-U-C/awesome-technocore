@@ -1,0 +1,43 @@
+name: Update Technocore Work Index
+
+on:
+  schedule:
+    - cron: "17 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-technocore-work-index
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rebuild index
+        run: python3 scripts/collect.py --room-cap 45 --limit 160 --resolve-did-notes 50
+
+      - name: Validate generated files
+        run: |
+          test -s README.md
+          test -s GENERATED.md
+          python3 -m json.tool data/contributions.json >/dev/null
+          grep -q "## Top Candidate Contributions" README.md
+          grep -q "## Active DIDs With Signals Or Notes" README.md
+
+      - name: Commit changes
+        run: |
+          if git diff --quiet; then
+            echo "No index changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md GENERATED.md data/contributions.json
+          git commit -m "Update Technocore work index"
+          git push
