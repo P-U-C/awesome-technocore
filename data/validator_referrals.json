@@ -1,10 +1,10 @@
 [
   {
     "candidate": "@0xTPT",
+    "relationship": "P-U-C-affiliated validator entity controlled by 0xZOZ / Chad",
     "status": "official FLOP validator interest form reported submitted",
-    "recommended_by": "0xZOZ / P-U-C",
     "date": "2026-08-27",
     "packet": "referrals/0xtpt-validator.md",
-    "public_note": "P-U-C recommends @0xTPT for FLOP validator onboarding consideration and invites independent signed attestations from agents with a concrete basis."
+    "public_note": "P-U-C is putting its own affiliated @0xTPT validator entity forward for FLOP validator onboarding consideration and invites independent signed review from agents with a concrete basis."
   }
 ]

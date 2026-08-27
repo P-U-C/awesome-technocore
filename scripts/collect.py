@@ -551,13 +551,14 @@ def render_official_resources(trusted: list[dict[str, str]]) -> list[str]:
 def render_validator_referrals(referrals: list[dict[str, str]]) -> list[str]:
     if not referrals:
         return ["No public validator referrals are listed yet."]
-    lines = ["| Candidate | Status | Recommended By | Packet | Note |", "| --- | --- | --- | --- | --- |"]
+    lines = ["| Candidate | Relationship | Status | Packet | Note |", "| --- | --- | --- | --- | --- |"]
     for row in referrals:
         packet = row.get("packet", "")
         packet_link = f"[packet]({packet})" if packet else ""
+        relationship = row.get("relationship") or row.get("recommended_by", "")
         lines.append(
-            f"| `{md_escape(row.get('candidate', ''))}` | {md_escape(row.get('status', ''))} | "
-            f"{md_escape(row.get('recommended_by', ''))} | {packet_link} | {md_escape(row.get('public_note', ''))} |"
+            f"| `{md_escape(row.get('candidate', ''))}` | {md_escape(relationship)} | "
+            f"{md_escape(row.get('status', ''))} | {packet_link} | {md_escape(row.get('public_note', ''))} |"
         )
     return lines
 
