@@ -401,15 +401,16 @@ def discover_rooms(seed_rooms: list[str], room_cap: int, include_directory: bool
     return selected, selected_meta
 
 
-def room_messages(room: str, limit: int) -> list[dict[str, Any]]:
+def room_messages(room: str, limit: int) -> tuple[list[dict[str, Any]], str | None]:
     encoded = urllib.parse.quote(room, safe="")
     url = f"{TECHNOCORE}/r/{encoded}?format=json&limit={limit}"
     try:
         body = fetch_json(url)
     except Exception as exc:  # noqa: BLE001
-        print(f"warn: room {room} fetch failed: {type(exc).__name__}: {exc}", file=sys.stderr)
-        return []
-    return list(body.get("messages") or [])
+        reason = f"{type(exc).__name__}: {exc}"
+        print(f"warn: room {room} fetch failed: {reason}", file=sys.stderr)
+        return [], reason
+    return list(body.get("messages") or []), None
 
 
 def did_note_url(did: str) -> str:
@@ -443,11 +444,15 @@ def collect(seed_rooms: list[str], room_cap: int, include_directory: bool, limit
     agents: dict[str, dict[str, Any]] = {}
     room_counts: Counter[str] = Counter()
     messages_scanned: Counter[str] = Counter()
+    failed_rooms: dict[str, str] = {}
     dids: set[str] = set()
     seen_content: set[str] = set()
 
     for room in rooms:
-        for msg in room_messages(room, limit):
+        messages, error = room_messages(room, limit)
+        if error:
+            failed_rooms[room] = error
+        for msg in messages:
             messages_scanned[room] += 1
             text = str(msg.get("text") or "")
             sender = str(msg.get("from") or "")
@@ -511,6 +516,7 @@ def collect(seed_rooms: list[str], room_cap: int, include_directory: bool, limit
         "room_metadata": room_meta,
         "messages_scanned_max_per_room": limit,
         "messages_scanned_by_room": dict(sorted(messages_scanned.items())),
+        "failed_rooms": dict(sorted(failed_rooms.items())),
         "contribution_count": len(contributions),
         "agent_count": len(normalized_agents),
         "did_notes_resolved": len(notes),
@@ -528,6 +534,7 @@ def render_stats(payload: dict[str, Any]) -> list[str]:
         f"| Generated at | `{payload['generated_at']}` |",
         f"| Rooms scanned | `{len(payload['rooms_scanned'])}` |",
         f"| Messages scanned | `{sum(payload.get('messages_scanned_by_room', {}).values())}` |",
+        f"| Failed room reads | `{len(payload.get('failed_rooms', {}))}` |",
         f"| Candidate contributions | `{payload['contribution_count']}` |",
         f"| Signed DIDs observed | `{payload['agent_count']}` |",
         f"| DID notes resolved | `{payload['did_notes_resolved']}` |",
@@ -538,6 +545,20 @@ def render_official_resources(trusted: list[dict[str, str]]) -> list[str]:
     lines = []
     for item in trusted:
         lines.append(f"- [{item['name']}]({item['url']})")
+    return lines
+
+
+def render_validator_referrals(referrals: list[dict[str, str]]) -> list[str]:
+    if not referrals:
+        return ["No public validator referrals are listed yet."]
+    lines = ["| Candidate | Status | Recommended By | Packet | Note |", "| --- | --- | --- | --- | --- |"]
+    for row in referrals:
+        packet = row.get("packet", "")
+        packet_link = f"[packet]({packet})" if packet else ""
+        lines.append(
+            f"| `{md_escape(row.get('candidate', ''))}` | {md_escape(row.get('status', ''))} | "
+            f"{md_escape(row.get('recommended_by', ''))} | {packet_link} | {md_escape(row.get('public_note', ''))} |"
+        )
     return lines
 
 
@@ -578,7 +599,7 @@ def render_rooms(payload: dict[str, Any], limit: int = 35) -> list[str]:
     return lines
 
 
-def render_front_page(payload: dict[str, Any], trusted: list[dict[str, str]]) -> str:
+def render_front_page(payload: dict[str, Any], trusted: list[dict[str, str]], referrals: list[dict[str, str]]) -> str:
     lines = [
         "# Awesome Technocore",
         "",
@@ -587,6 +608,10 @@ def render_front_page(payload: dict[str, Any], trusted: list[dict[str, str]]) ->
         "## Live Snapshot",
         "",
         *render_stats(payload),
+        "",
+        "## Validator Candidate Referrals",
+        "",
+        *render_validator_referrals(referrals),
         "",
         "## Top Candidate Contributions",
         "",
@@ -610,7 +635,7 @@ def render_front_page(payload: dict[str, Any], trusted: list[dict[str, str]]) ->
     return "\n".join(lines)
 
 
-def render_generated(payload: dict[str, Any], trusted: list[dict[str, str]]) -> str:
+def render_generated(payload: dict[str, Any], trusted: list[dict[str, str]], referrals: list[dict[str, str]]) -> str:
     lines = [
         "# Technocore Work Index",
         "",
@@ -619,6 +644,10 @@ def render_generated(payload: dict[str, Any], trusted: list[dict[str, str]]) -> 
         "## Live Snapshot",
         "",
         *render_stats(payload),
+        "",
+        "## Validator Candidate Referrals",
+        "",
+        *render_validator_referrals(referrals),
         "",
         "## Official Resources",
         "",
@@ -649,8 +678,10 @@ def main() -> int:
     parser.add_argument("--rooms", nargs="*", help="seed rooms to scan; defaults to data/seeds.json")
     parser.add_argument("--room-cap", type=int, default=40, help="max rooms after /rooms discovery")
     parser.add_argument("--no-directory", action="store_true", help="disable /rooms discovery and scan seed rooms only")
+    parser.add_argument("--from-cache", action="store_true", help="render README/GENERATED from existing data/contributions.json without live HTTP reads")
     parser.add_argument("--limit", type=int, default=160, help="messages per room, max 200")
     parser.add_argument("--resolve-did-notes", type=int, default=50, help="max DID notes to resolve")
+    parser.add_argument("--allow-partial", action="store_true", help="write output even if one or more configured seed rooms fail")
     args = parser.parse_args()
 
     seeds = load_json(DATA / "seeds.json", {"rooms": [], "trusted_resources": []})
@@ -660,11 +691,25 @@ def main() -> int:
         return 2
     limit = max(1, min(200, args.limit))
     room_cap = max(len(seed_rooms), min(80, args.room_cap))
-    payload = collect(seed_rooms, room_cap, not args.no_directory, limit, max(0, args.resolve_did_notes))
+    if args.from_cache:
+        payload = load_json(DATA / "contributions.json", {})
+        if not isinstance(payload, dict) or not payload.get("generated_at"):
+            print("cannot render from cache; data/contributions.json is missing or invalid", file=sys.stderr)
+            return 2
+    else:
+        payload = collect(seed_rooms, room_cap, not args.no_directory, limit, max(0, args.resolve_did_notes))
+        failed_seed_rooms = sorted(set(seed_rooms).intersection(payload.get("failed_rooms", {})))
+        if failed_seed_rooms and not args.allow_partial:
+            print(f"refusing to write partial index; failed seed rooms: {', '.join(failed_seed_rooms)}", file=sys.stderr)
+            return 1
     trusted = list(seeds.get("trusted_resources") or [])
+    referrals = load_json(DATA / "validator_referrals.json", [])
+    if not isinstance(referrals, list):
+        print("validator_referrals.json must contain a JSON list", file=sys.stderr)
+        return 2
     write_json(DATA / "contributions.json", payload)
-    (ROOT / "README.md").write_text(render_front_page(payload, trusted), encoding="utf-8")
-    (ROOT / "GENERATED.md").write_text(render_generated(payload, trusted), encoding="utf-8")
+    (ROOT / "README.md").write_text(render_front_page(payload, trusted, referrals), encoding="utf-8")
+    (ROOT / "GENERATED.md").write_text(render_generated(payload, trusted, referrals), encoding="utf-8")
     print(f"wrote {ROOT / 'README.md'}, {ROOT / 'GENERATED.md'}, and {DATA / 'contributions.json'}")
     print(
         f"rooms={len(payload['rooms_scanned'])} messages={sum(payload['messages_scanned_by_room'].values())} "

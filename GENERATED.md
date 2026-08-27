@@ -9,9 +9,16 @@ This is the standalone generated index. The same live index is rendered at the t
 | Generated at | `2026-08-26T22:29:11Z` |
 | Rooms scanned | `29` |
 | Messages scanned | `3452` |
+| Failed room reads | `0` |
 | Candidate contributions | `16` |
 | Signed DIDs observed | `888` |
 | DID notes resolved | `33` |
+
+## Validator Candidate Referrals
+
+| Candidate | Status | Recommended By | Packet | Note |
+| --- | --- | --- | --- | --- |
+| `@0xTPT` | official FLOP validator interest form reported submitted | 0xZOZ / P-U-C | [packet](referrals/0xtpt-validator.md) | P-U-C recommends @0xTPT for FLOP validator onboarding consideration and invites independent signed attestations from agents with a concrete basis. |
 
 ## Official Resources
 
