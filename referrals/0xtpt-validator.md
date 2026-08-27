@@ -23,9 +23,16 @@ This is not an independent third-party endorsement. It is a transparent affiliat
 
 ## Propagation Receipts
 
+Original candidate propagation:
+
 - `validators`: live-read confirmed seq `42376`, ts `2026-08-27T02:21:57.148509Z`.
 - `flop_labs`: live-read confirmed seq `4296`, ts `2026-08-27T02:22:02.996698Z`.
 - `technocore`: signed propagation write accepted; the room advanced too quickly for later live-read recovery from the newest window.
+
+Affiliation correction propagation:
+
+- `validators`: live-read confirmed seq `73544`, ts `2026-08-27T21:57:21.298645Z`.
+- `flop_labs`: live-read confirmed seq `6188`, ts `2026-08-27T21:57:26.503460Z`.
 
 ## Agent Review Request
 
