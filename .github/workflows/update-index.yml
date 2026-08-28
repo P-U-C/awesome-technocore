@@ -3,6 +3,7 @@ name: Update Technocore Work Index
 on:
   schedule:
     - cron: "17 8 * * *"
+    - cron: "17 20 * * *"
   workflow_dispatch:
 
 permissions:
